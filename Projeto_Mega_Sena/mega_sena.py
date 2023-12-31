@@ -1,5 +1,6 @@
 import sqlite3
 import pandas as pd
+import os
 
 # Função para criar tabela
 def criar_tabela():
@@ -14,12 +15,14 @@ def criar_tabela():
         numero3 INTEGER,
         numero4 INTEGER,
         numero5 INTEGER,
-        numero6 INTEGER
+        numero6 INTEGER,
+        numero7 INTEGER
     )
 ''')
     
     conexao.commit()
     conexao.close()
+
 
 # Função para adicionar novo jogo
 def adicionar_jogo(numeros):
@@ -30,20 +33,24 @@ def adicionar_jogo(numeros):
         print("Erro: Certifique-se de inserir números separados por vírgula.")
         return
 
-    # Verifica se a tupla tem exatamente 6 elementos
-    if len(numeros) != 6:
-        print("Erro: Certifique-se de inserir exatamente 6 números.")
-        return
+    # Verifica se a tupla tem exatamente 6 ou 7 elementos
+    if len(numeros) == 6 or len(numeros) == 7:
+        # Conectar ao banco de dados
+        conexao = sqlite3.connect('jogos.db')
+        cursor = conexao.cursor()
 
-    conexao = sqlite3.connect('jogos.db')
-    cursor = conexao.cursor()
-    cursor.execute('''
-        INSERT INTO jogos (numero1, numero2, numero3, numero4, numero5, numero6)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', numeros)
-    
-    conexao.commit()
-    conexao.close()
+        # Adiciona o jogo ao banco de dados, considerando todos os números
+        cursor.execute('''
+            INSERT INTO jogos (numero1, numero2, numero3, numero4, numero5, numero6, numero7)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', numeros)
+
+        conexao.commit()
+        conexao.close()
+        print("Jogo adicionado com sucesso!")
+    else:
+        print("Erro: Certifique-se de inserir exatamente 6 ou 7 números.")
+
 
 # Função para obter dados do contato
 def obter_jogos():
@@ -57,31 +64,37 @@ def obter_jogos():
 
     return jogos
 
-# Função para atualizar Jogos
-def atualizar_jogo(jogo_id, novo_jogo):
+def adicionar_jogo(numeros):
     # Validação e conversão da entrada
     try:
-        novo_jogo = tuple(map(int, novo_jogo.split(',')))
+        numeros = tuple(map(int, numeros.split(',')))
     except ValueError:
         print("Erro: Certifique-se de inserir números separados por vírgula.")
         return
 
-    # Verifica se a tupla tem exatamente 6 elementos
-    if len(novo_jogo) != 6:
-        print("Erro: Certifique-se de inserir exatamente 6 números.")
-        return
+    # Verifica se a tupla tem exatamente 6 ou 7 elementos
+    if len(numeros) == 6 or len(numeros) == 7:
+        conexao = sqlite3.connect('jogos.db')
+        cursor = conexao.cursor()
 
-    conexao = sqlite3.connect('jogos.db')
-    cursor = conexao.cursor()
+        if len(numeros) == 6:
+            cursor.execute('''
+                INSERT INTO jogos (numero1, numero2, numero3, numero4, numero5, numero6)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', numeros)
+        else:
+            cursor.execute('''
+                INSERT INTO jogos (numero1, numero2, numero3, numero4, numero5, numero6, numero7)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', numeros)
 
-    cursor.execute('''
-        UPDATE jogos 
-        SET numero1 = ?, numero2 = ?, numero3 = ?, numero4 = ?, numero5 = ?, numero6 = ? 
-        WHERE id = ?
-    ''', (*novo_jogo, jogo_id))
+        print("jogo adicionado com sucesso!")
+        
+        conexao.commit()
+        conexao.close()
+    else:
+        print("Erro: Certifique-se de inserir exatamente 6 ou 7 números.")
 
-    conexao.commit()
-    conexao.close()
 
 # Função para excluir Jogo
 def excluir_jogo(jogo_id):
@@ -94,38 +107,38 @@ def excluir_jogo(jogo_id):
 
 # Função para validar jogos no banco de dados
 def validar_jogos(numeros):
-    # Validação e conversão da entrada
+   # Validação e conversão da entrada
     try:
         numeros = tuple(map(int, numeros.split(',')))
     except ValueError:
         print("Erro: Certifique-se de inserir números separados por vírgula.")
         return False
 
-    # Verifica se a tupla tem exatamente 6 elementos
-    if len(numeros) != 6:
-        print("Erro: Certifique-se de inserir exatamente 6 números.")
-        return False
+    # Verifica se a tupla tem exatamente 6 ou 7 elementos
+    if len(numeros) == 6 or len(numeros) == 7:
+        # Conectar ao banco de dados
+        conexao = sqlite3.connect('jogos.db')
+        cursor = conexao.cursor()
 
-    # Conectar ao banco de dados
-    conexao = sqlite3.connect('jogos.db')
-    cursor = conexao.cursor()
+        # Consultar o banco de dados para verificar os dados
+        cursor.execute('''
+            SELECT * FROM jogos 
+            WHERE numero1 = ? AND numero2 = ? AND numero3 = ? AND numero4 = ? AND numero5 = ? AND numero6 = ?
+        ''', numeros[:6])  # Considera apenas os 6 primeiros números para validar
 
-    # Consultar o banco de dados para verificar os dados
-    cursor.execute('''
-        SELECT * FROM jogos 
-        WHERE numero1 = ? AND numero2 = ? AND numero3 = ? AND numero4 = ? AND numero5 = ? AND numero6 = ?
-    ''', numeros)
-    
-    resultado = cursor.fetchone()
+        resultado = cursor.fetchone()
 
-    #Fechar a conexão com o banco de dados
-    conexao.close()
+        # Fechar a conexão com o banco de dados
+        conexao.close()
 
-    # Verificar o resultado da consulta
-    if resultado:
-        return True  # Dados válidos
+        # Verificar o resultado da consulta
+        if resultado:
+            return True  # Dados válidos
+        else:
+            return False  # Dados inválidos
     else:
-        return False  # Dados inválidos
+        print("Erro: Certifique-se de inserir exatamente 6 ou 7 números.")
+        return False
     
 #Função para Limpar completamente o banco de dados
 def limpar_tabela():
@@ -156,6 +169,13 @@ def exportar_tabela_para_excel():
     # Fechar a conexão
     conexao.close()
 
+def excluir_banco_de_dados():
+    try:
+        os.remove('jogos.db')
+        print("Banco de dados removido com sucesso.")
+    except FileNotFoundError:
+        print("Banco de dados não encontrado.")
+
 
 # Função principal
 def main():
@@ -185,13 +205,13 @@ def main():
         if escolha == "1":
             numeros = input("Digite os numeros do jogo(EX: 01,02,03,04,05,06): ")
             adicionar_jogo(numeros)
-            print("jogo adicionado com sucesso!")
+            
         
         elif escolha == "2":
             jogos = obter_jogos()
             print("\n Lista de jogos:")
             for jogo in jogos:
-                print(f"{jogo[0]}. Numeros do jogo: {jogo[1]}, {jogo[2]}, {jogo[3]}, {jogo[4]}, {jogo[5]}, {jogo[6]}")
+                print(f"{jogo[0]}. Numeros do jogo: {jogo[1]}, {jogo[2]}, {jogo[3]}, {jogo[4]}, {jogo[5]}, {jogo[6]}, {jogo[7]}")
 
         elif escolha == "3":
             jogo_id = input("Digite o id do jogo que deseja atualizar: ")
@@ -236,4 +256,4 @@ def main():
             break
 
 if __name__ == "__main__":
-    main()
+       main()
